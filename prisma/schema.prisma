@@ -1,0 +1,536 @@
+// Chaya Surah Feldman Gown Gemach — database schema
+// Connection URLs live in prisma.config.ts (Prisma 7), not here.
+//
+// Conventions
+// - Money is ALWAYS stored as integer cents (Int). Never floats.
+// - Calendar dates (pickup/return/intake/payment dates) are Postgres DATE
+//   columns (@db.Date): they are days, not instants, so there is no
+//   timezone drift. Instants (createdAt, confirmedAt...) are timestamptz.
+// - Every business entity has a human-friendly sequential `number`
+//   (G-0001, C-0001, D-0001, R-0001) in addition to its UUID primary key.
+// - Nothing historical is hard-deleted in normal operation. Gowns,
+//   customers and donors are archived; reservations are cancelled.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum StaffRole {
+  ADMIN
+  ASSISTANT
+}
+
+enum GownStatus {
+  AVAILABLE
+  PENDING_RESERVATION
+  RESERVED
+  CHECKED_OUT
+  PENDING_INSPECTION
+  PENDING_CLEANING
+  NEEDS_ALTERATION
+  UNAVAILABLE_OTHER
+  DISPOSED
+  ARCHIVED
+}
+
+enum GownCondition {
+  NEW_WITH_TAGS
+  EXCELLENT
+  VERY_GOOD
+  GOOD
+  FAIR
+  POOR
+}
+
+enum PhotoKind {
+  GALLERY
+  DAMAGE
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_OUT
+  RETURNED
+  CANCELLED
+}
+
+enum ReservationItemStatus {
+  PENDING
+  CONFIRMED
+  CHECKED_OUT
+  RETURNED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CASH
+  CHECK
+  OTHER
+}
+
+/// Rental-fee ledger entry types. Refundable security deposits are NOT
+/// recorded here — they have their own ledger (DepositTransaction) so that
+/// rental income and deposits can never be mixed up in reports.
+enum PaymentKind {
+  PAYMENT
+  REFUND
+  WAIVER
+}
+
+enum DepositTransactionKind {
+  COLLECTED
+  RETURNED
+  RETAINED
+}
+
+enum InspectionOutcome {
+  READY
+  NEEDS_CLEANING
+  NEEDS_ALTERATION
+  DAMAGED
+  OTHER
+}
+
+enum WorkStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+// ---------------------------------------------------------------------------
+// Staff & settings
+// ---------------------------------------------------------------------------
+
+/// One row per person who can log in. `id` equals the Supabase Auth user id.
+model StaffUser {
+  id                 String    @id @db.Uuid
+  email              String    @unique
+  fullName           String
+  role               StaffRole @default(ASSISTANT)
+  isActive           Boolean   @default(true)
+  mustChangePassword Boolean   @default(false)
+  lastLoginAt        DateTime? @db.Timestamptz(6)
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime  @updatedAt @db.Timestamptz(6)
+  createdById        String?   @db.Uuid
+
+  activity ActivityLog[]
+
+  @@map("staff_users")
+}
+
+/// Singleton row (id = 1).
+model AppSettings {
+  id                       Int      @id @default(1)
+  defaultRentalFeeCents    Int      @default(0)
+  defaultDepositCents      Int      @default(0)
+  defaultRentalDays        Int      @default(7)
+  /// Days a gown is held back after an expected return before it may be
+  /// booked again (time for inspection/cleaning). Applied to availability.
+  turnaroundBufferDays     Int      @default(0)
+  timezone                 String   @default("America/New_York")
+  allowAssistantOverride   Boolean  @default(false)
+  upcomingWindowDays       Int      @default(14)
+  contactPhone             String?
+  contactEmail             String?
+  contactAddress           String?
+  reservationTerms         String?
+  updatedAt                DateTime @updatedAt @db.Timestamptz(6)
+  updatedById              String?  @db.Uuid
+
+  @@map("app_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Donors, customers
+// ---------------------------------------------------------------------------
+
+model Donor {
+  id         String    @id @default(uuid()) @db.Uuid
+  number     Int       @unique @default(autoincrement())
+  name       String
+  phone      String?
+  phoneDigits String?
+  email      String?
+  address    String?
+  notes      String?
+  isArchived Boolean   @default(false)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(6)
+  createdById String?  @db.Uuid
+
+  gowns Gown[]
+
+  @@index([name])
+  @@index([phoneDigits])
+  @@map("donors")
+}
+
+model Customer {
+  id          String   @id @default(uuid()) @db.Uuid
+  number      Int      @unique @default(autoincrement())
+  fullName    String
+  phone       String
+  /// Digits-only copy of `phone`, used for duplicate detection and search.
+  phoneDigits String
+  email       String?
+  address     String?
+  notes       String?
+  isArchived  Boolean  @default(false)
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+  createdById String?  @db.Uuid
+
+  reservations Reservation[]
+
+  @@index([fullName])
+  @@index([phoneDigits])
+  @@map("customers")
+}
+
+// ---------------------------------------------------------------------------
+// Gowns
+// ---------------------------------------------------------------------------
+
+model Gown {
+  id              String         @id @default(uuid()) @db.Uuid
+  number          Int            @unique @default(autoincrement())
+  intakeDate      DateTime       @db.Date
+  description     String
+  style           String
+  size            String
+  /// Numeric part of `size` when there is one, for sensible sorting.
+  sizeSort        Decimal?       @db.Decimal(6, 2)
+  color           String
+  designer        String?
+  intakeCondition GownCondition?
+  currentCondition GownCondition?
+  bust            String?
+  waist           String?
+  hips            String?
+  length          String?
+  otherMeasurements String?
+  notes           String?
+  status          GownStatus     @default(AVAILABLE)
+  statusReason    String?
+  statusChangedAt DateTime       @default(now()) @db.Timestamptz(6)
+
+  donorId         String?        @db.Uuid
+  donor           Donor?         @relation(fields: [donorId], references: [id], onDelete: SetNull)
+
+  archivedAt      DateTime?      @db.Timestamptz(6)
+  archiveReason   String?
+  disposedAt      DateTime?      @db.Timestamptz(6)
+  disposedDate    DateTime?      @db.Date
+  disposalReason  String?
+  disposalNotes   String?
+
+  // Future public catalogue (not used by the admin app yet). Only fields
+  // explicitly whitelisted in src/lib/public/catalog.ts may ever be served
+  // publicly, and only for gowns with isPubliclyListed = true.
+  isPubliclyListed  Boolean      @default(false)
+  publicDescription String?
+
+  createdAt       DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime       @updatedAt @db.Timestamptz(6)
+  createdById     String?        @db.Uuid
+
+  photos           GownPhoto[]
+  reservationItems ReservationItem[]
+  statusHistory    GownStatusChange[]
+  inspections      Inspection[]
+  cleanings        CleaningRecord[]
+  alterations      AlterationRecord[]
+
+  @@index([status])
+  @@index([intakeDate])
+  @@index([donorId])
+  @@index([size])
+  @@index([color])
+  @@index([style])
+  @@map("gowns")
+}
+
+model GownPhoto {
+  id          String    @id @default(uuid()) @db.Uuid
+  gownId      String    @db.Uuid
+  gown        Gown      @relation(fields: [gownId], references: [id], onDelete: Cascade)
+  kind        PhotoKind @default(GALLERY)
+  /// Object path in the private `gown-photos` Supabase Storage bucket.
+  storagePath String    @unique
+  thumbPath   String?
+  isPrimary   Boolean   @default(false)
+  sortOrder   Int       @default(0)
+  caption     String?
+  returnId    String?   @db.Uuid
+  gownReturn  GownReturn? @relation(fields: [returnId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  createdById String?   @db.Uuid
+
+  @@index([gownId, kind])
+  @@map("gown_photos")
+}
+
+model GownStatusChange {
+  id          String      @id @default(uuid()) @db.Uuid
+  gownId      String      @db.Uuid
+  gown        Gown        @relation(fields: [gownId], references: [id], onDelete: Cascade)
+  fromStatus  GownStatus?
+  toStatus    GownStatus
+  reason      String?
+  changedById String?     @db.Uuid
+  changedAt   DateTime    @default(now()) @db.Timestamptz(6)
+
+  @@index([gownId, changedAt])
+  @@map("gown_status_changes")
+}
+
+// ---------------------------------------------------------------------------
+// Reservations
+// ---------------------------------------------------------------------------
+
+model Reservation {
+  id                   String            @id @default(uuid()) @db.Uuid
+  number               Int               @unique @default(autoincrement())
+  customerId           String            @db.Uuid
+  customer             Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  status               ReservationStatus @default(PENDING)
+  requestDate          DateTime          @db.Date
+  depositRequiredCents Int               @default(0)
+  notes                String?
+
+  confirmedAt          DateTime?         @db.Timestamptz(6)
+  confirmedById        String?           @db.Uuid
+  cancelledAt          DateTime?         @db.Timestamptz(6)
+  cancelledById        String?           @db.Uuid
+  cancellationReason   String?
+
+  createdAt            DateTime          @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime          @updatedAt @db.Timestamptz(6)
+  createdById          String?           @db.Uuid
+
+  items        ReservationItem[]
+  payments     Payment[]
+  deposits     DepositTransaction[]
+
+  @@index([customerId])
+  @@index([status])
+  @@map("reservations")
+}
+
+/// One gown within a reservation, with its own dates and lifecycle. Double
+/// booking is prevented by a Postgres EXCLUSION constraint over
+/// (gownId, daterange(pickupDate, returnDate + buffer)) for rows that block
+/// availability — see the migration. The application also checks first so
+/// it can show friendly messages, but the constraint is the real guarantee,
+/// including under simultaneous confirmations.
+model ReservationItem {
+  id                  String                @id @default(uuid()) @db.Uuid
+  reservationId       String                @db.Uuid
+  reservation         Reservation           @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  gownId              String                @db.Uuid
+  gown                Gown                  @relation(fields: [gownId], references: [id], onDelete: Restrict)
+  status              ReservationItemStatus @default(PENDING)
+  requestedPickupDate DateTime              @db.Date
+  confirmedPickupDate DateTime?             @db.Date
+  expectedReturnDate  DateTime              @db.Date
+  /// Last day the gown is unavailable, i.e. expectedReturnDate + turnaround
+  /// buffer. Maintained by the app; used by the exclusion constraint.
+  blockedThroughDate  DateTime              @db.Date
+  actualPickupDate    DateTime?             @db.Date
+  actualReturnDate    DateTime?             @db.Date
+  rentalFeeCents      Int                   @default(0)
+  /// True while this item holds the gown (CONFIRMED or CHECKED_OUT) and no
+  /// override was used. Maintained by the app; drives the constraint.
+  blocksAvailability  Boolean               @default(false)
+  conflictOverride    Boolean               @default(false)
+  overrideReason      String?
+  overrideById        String?               @db.Uuid
+  cancelledAt         DateTime?             @db.Timestamptz(6)
+  notes               String?
+  createdAt           DateTime              @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime              @updatedAt @db.Timestamptz(6)
+
+  pickup     Pickup?
+  gownReturn GownReturn?
+
+  @@index([gownId, status])
+  @@index([reservationId])
+  @@index([expectedReturnDate])
+  @@index([requestedPickupDate])
+  @@map("reservation_items")
+}
+
+model Pickup {
+  id             String          @id @default(uuid()) @db.Uuid
+  itemId         String          @unique @db.Uuid
+  item           ReservationItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  pickupDate     DateTime        @db.Date
+  condition      GownCondition?
+  notes          String?
+  processedById  String?         @db.Uuid
+  createdAt      DateTime        @default(now()) @db.Timestamptz(6)
+
+  @@map("pickups")
+}
+
+model GownReturn {
+  id            String          @id @default(uuid()) @db.Uuid
+  itemId        String          @unique @db.Uuid
+  item          ReservationItem @relation(fields: [itemId], references: [id], onDelete: Restrict)
+  returnDate    DateTime        @db.Date
+  condition     GownCondition?
+  hasDamage     Boolean         @default(false)
+  damageNotes   String?
+  notes         String?
+  daysLate      Int             @default(0)
+  processedById String?         @db.Uuid
+  createdAt     DateTime        @default(now()) @db.Timestamptz(6)
+
+  damagePhotos GownPhoto[]
+  inspection   Inspection?
+
+  @@map("gown_returns")
+}
+
+model Inspection {
+  id             String            @id @default(uuid()) @db.Uuid
+  gownId         String            @db.Uuid
+  gown           Gown              @relation(fields: [gownId], references: [id], onDelete: Restrict)
+  returnId       String?           @unique @db.Uuid
+  gownReturn     GownReturn?       @relation(fields: [returnId], references: [id], onDelete: SetNull)
+  inspectionDate DateTime          @db.Date
+  outcome        InspectionOutcome
+  condition      GownCondition?
+  notes          String?
+  inspectedById  String?           @db.Uuid
+  createdAt      DateTime          @default(now()) @db.Timestamptz(6)
+
+  @@index([gownId])
+  @@map("inspections")
+}
+
+model CleaningRecord {
+  id             String     @id @default(uuid()) @db.Uuid
+  gownId         String     @db.Uuid
+  gown           Gown       @relation(fields: [gownId], references: [id], onDelete: Restrict)
+  identifiedDate DateTime   @db.Date
+  reason         String?
+  assignedTo     String?
+  status         WorkStatus @default(OPEN)
+  completedDate  DateTime?  @db.Date
+  costCents      Int?
+  notes          String?
+  inspectionId   String?    @db.Uuid
+  createdById    String?    @db.Uuid
+  completedById  String?    @db.Uuid
+  createdAt      DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime   @updatedAt @db.Timestamptz(6)
+
+  @@index([gownId, status])
+  @@map("cleaning_records")
+}
+
+model AlterationRecord {
+  id             String     @id @default(uuid()) @db.Uuid
+  gownId         String     @db.Uuid
+  gown           Gown       @relation(fields: [gownId], references: [id], onDelete: Restrict)
+  identifiedDate DateTime   @db.Date
+  description    String
+  assignedTo     String?
+  status         WorkStatus @default(OPEN)
+  completedDate  DateTime?  @db.Date
+  costCents      Int?
+  notes          String?
+  inspectionId   String?    @db.Uuid
+  createdById    String?    @db.Uuid
+  completedById  String?    @db.Uuid
+  createdAt      DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime   @updatedAt @db.Timestamptz(6)
+
+  @@index([gownId, status])
+  @@map("alteration_records")
+}
+
+// ---------------------------------------------------------------------------
+// Money
+// ---------------------------------------------------------------------------
+
+model Payment {
+  id            String        @id @default(uuid()) @db.Uuid
+  reservationId String        @db.Uuid
+  reservation   Reservation   @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  kind          PaymentKind   @default(PAYMENT)
+  amountCents   Int
+  method        PaymentMethod?
+  paymentDate   DateTime      @db.Date
+  reference     String?
+  notes         String?
+  isVoided      Boolean       @default(false)
+  voidedAt      DateTime?     @db.Timestamptz(6)
+  voidedById    String?       @db.Uuid
+  voidReason    String?
+  recordedById  String?       @db.Uuid
+  createdAt     DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(6)
+
+  @@index([reservationId])
+  @@index([paymentDate])
+  @@map("payments")
+}
+
+model DepositTransaction {
+  id              String                 @id @default(uuid()) @db.Uuid
+  reservationId   String                 @db.Uuid
+  reservation     Reservation            @relation(fields: [reservationId], references: [id], onDelete: Restrict)
+  kind            DepositTransactionKind
+  amountCents     Int
+  method          PaymentMethod?
+  transactionDate DateTime               @db.Date
+  reason          String?
+  notes           String?
+  isVoided        Boolean                @default(false)
+  voidedAt        DateTime?              @db.Timestamptz(6)
+  voidedById      String?                @db.Uuid
+  voidReason      String?
+  recordedById    String?                @db.Uuid
+  createdAt       DateTime               @default(now()) @db.Timestamptz(6)
+
+  @@index([reservationId])
+  @@index([transactionDate])
+  @@map("deposit_transactions")
+}
+
+// ---------------------------------------------------------------------------
+// Audit
+// ---------------------------------------------------------------------------
+
+model ActivityLog {
+  id         String     @id @default(uuid()) @db.Uuid
+  actorId    String?    @db.Uuid
+  actor      StaffUser? @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actorName  String?
+  action     String
+  entityType String
+  entityId   String?
+  summary    String
+  details    Json?
+  createdAt  DateTime   @default(now()) @db.Timestamptz(6)
+
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([actorId])
+  @@map("activity_logs")
+}

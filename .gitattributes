@@ -1,0 +1,3 @@
+# Prisma checksums migration.sql byte-for-byte, so keep SQL line endings
+# identical on every OS (see prisma/MIGRATIONS.md).
+*.sql text eol=lf
