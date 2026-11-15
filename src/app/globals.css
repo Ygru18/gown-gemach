@@ -1,0 +1,107 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: var(--font-cormorant), "Cormorant Garamond", Georgia, serif;
+  --font-sans: var(--font-jost), "Jost", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ivory: #fffdf9;
+  --color-page: #fbf8f4;
+  --color-ink: #3b3134;
+  --color-ink-soft: #5f5356;
+  --color-muted: #8a7d78;
+  --color-line: #efe6dc;
+  --color-line-strong: #e2d4c4;
+
+  --color-blush-50: #fdf6f6;
+  --color-blush-100: #fbeaea;
+  --color-blush-200: #f5d5d6;
+  --color-blush-300: #ecb9bc;
+  --color-blush-400: #de979d;
+  --color-blush-500: #c9757e;
+  --color-blush-600: #a85a64;
+  --color-blush-700: #86454f;
+
+  --color-champagne-50: #fcf8f1;
+  --color-champagne-100: #f6eddd;
+  --color-champagne-200: #ecdcc0;
+  --color-champagne-300: #dec69d;
+
+  --color-beige-100: #f3ece3;
+  --color-beige-200: #e8ddcf;
+
+  --color-gold-300: #e2cd9f;
+  --color-gold-400: #cfb27a;
+  --color-gold-500: #b8955a;
+  --color-gold-600: #977641;
+
+  --shadow-soft: 0 1px 2px rgb(120 90 70 / 0.04), 0 4px 16px -4px rgb(120 90 70 / 0.08);
+  --shadow-lift: 0 2px 4px rgb(120 90 70 / 0.05), 0 12px 32px -8px rgb(120 90 70 / 0.16);
+  --radius-card: 1.25rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, .font-display {
+    font-family: var(--font-display);
+    letter-spacing: 0.005em;
+    font-variant-numeric: lining-nums proportional-nums;
+  }
+  ::selection {
+    background: var(--color-blush-200);
+  }
+  input, select, textarea, button {
+    font: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-gold-400);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-xl border border-line-strong bg-white px-3.5 py-2.5 text-[15px] text-ink shadow-[inset_0_1px_2px_rgb(120_90_70/0.04)] transition placeholder:text-muted/70 focus:border-gold-400 focus:ring-4 focus:ring-gold-300/30 focus:outline-none disabled:bg-beige-100 disabled:text-muted;
+  }
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium tracking-wide text-ink-soft;
+  }
+  .card {
+    @apply rounded-[var(--radius-card)] border border-line bg-ivory shadow-soft;
+  }
+  .eyebrow {
+    @apply text-[11px] font-medium tracking-[0.22em] text-gold-600 uppercase;
+  }
+  .table-elegant {
+    @apply w-full text-left text-sm;
+  }
+  .table-elegant th {
+    @apply border-b border-line px-4 py-3 text-[11px] font-medium tracking-[0.14em] text-muted uppercase whitespace-nowrap;
+  }
+  .table-elegant td {
+    @apply border-b border-line/70 px-4 py-3 align-middle;
+  }
+  .table-elegant tbody tr:hover td {
+    @apply bg-champagne-50/70;
+  }
+  .ornament {
+    background-image: linear-gradient(90deg, transparent, var(--color-gold-300), transparent);
+    height: 1px;
+  }
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: white; }
+  .card { box-shadow: none !important; border-color: #ddd !important; break-inside: avoid; }
+  main { padding: 0 !important; margin: 0 !important; }
+  a { text-decoration: none; color: inherit; }
+}

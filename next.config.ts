@@ -28,6 +28,7 @@ const contentSecurityPolicy = [
 ].join("; ");
 
 const nextConfig: NextConfig = {
+  agentRules: false,
   experimental: {
     serverActions: {
       bodySizeLimit: "2mb",

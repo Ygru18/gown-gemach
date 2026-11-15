@@ -65,10 +65,6 @@ async function recomputeReservationStatus(tx: Tx, reservationId: string) {
   return status;
 }
 
-function blocks(status: ReservationItemStatus) {
-  return status === "CONFIRMED" || status === "CHECKED_OUT";
-}
-
 // ---------------------------------------------------------------------------
 // Step 1: create a pending reservation
 // ---------------------------------------------------------------------------

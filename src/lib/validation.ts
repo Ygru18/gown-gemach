@@ -77,7 +77,8 @@ export function formToObject(fd: FormData): Record<string, unknown> {
     if (typeof value !== "string") continue;
     if (key.endsWith("[]")) {
       const k = key.slice(0, -2);
-      (out[k] as string[] | undefined) ? (out[k] as string[]).push(value) : (out[k] = [value]);
+      if (Array.isArray(out[k])) (out[k] as string[]).push(value);
+      else out[k] = [value];
     } else {
       out[key] = value;
     }
