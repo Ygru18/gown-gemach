@@ -96,9 +96,11 @@ export interface ActionFormProps {
   /** Show errors inline at the top of the form, in addition to a toast. */
   inlineErrors?: boolean;
   id?: string;
+  /** Use a full page load for redirects (after sign-in or password changes). */
+  hardRedirect?: boolean;
 }
 
-export function ActionForm({ action, children, className, successMessage, confirm, resetOnSuccess, onSuccess, inlineErrors = true, id }: ActionFormProps) {
+export function ActionForm({ action, children, className, successMessage, confirm, resetOnSuccess, onSuccess, inlineErrors = true, id, hardRedirect }: ActionFormProps) {
   const [pending, start] = useTransition();
   const [result, setResult] = useState<ActionResult | null>(null);
   const [askOpen, setAskOpen] = useState(false);
@@ -122,11 +124,13 @@ export function ActionForm({ action, children, className, successMessage, confir
         if (res.message || successMessage) toast("success", res.message ?? successMessage!);
         if (resetOnSuccess) form.reset();
         onSuccess?.(res);
-        if (res.redirect) router.push(res.redirect);
-        else router.refresh();
+        if (res.redirect) {
+          if (hardRedirect) window.location.assign(res.redirect);
+          else router.push(res.redirect);
+        } else router.refresh();
       } else {
         toast("error", res.error ?? "Please check the form.");
-        if (res.redirect) router.push(res.redirect);
+        if (res.redirect) window.location.assign(res.redirect);
       }
     });
   };

@@ -5,7 +5,7 @@ const eslintConfig = [
   ...nextCoreWebVitals,
   ...nextTypescript,
   {
-    ignores: ["src/generated/**"],
+    ignores: ["src/generated/**", "e2e/**", ".local-storage/**"],
   },
 ];
 

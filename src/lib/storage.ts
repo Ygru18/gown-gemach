@@ -11,7 +11,7 @@ import { getEnv, isLocalTestMode } from "@/lib/env";
 // (so large phone photos never pass through a size-limited function).
 
 export const SIGNED_URL_TTL_SECONDS = 60 * 60;
-const LOCAL_DIR = path.join(process.cwd(), ".local-storage");
+const LOCAL_DIR = path.join(/*turbopackIgnore: true*/ process.cwd(), ".local-storage");
 
 function bucket() {
   return getEnv().SUPABASE_STORAGE_BUCKET;
@@ -63,7 +63,7 @@ export async function removeObjects(paths: string[]): Promise<void> {
   const list = paths.filter(Boolean);
   if (list.length === 0) return;
   if (isLocalTestMode()) {
-    await Promise.all(list.map((p) => fs.rm(localPath(p), { force: true })));
+    await Promise.all(list.map((p) => fs.rm(/*turbopackIgnore: true*/ localPath(p), { force: true })));
     return;
   }
   const { error } = await createAdminClient().storage.from(bucket()).remove(list);

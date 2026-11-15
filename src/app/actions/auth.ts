@@ -19,7 +19,7 @@ export async function signInAction(fd: FormData): Promise<ActionResult> {
     const staff = await prisma.staffUser.findUnique({ where: { email } });
     if (!staff || !staff.isActive) return { ok: false, error: "Email or password is not correct." };
     (await cookies()).set(LOCAL_TEST_COOKIE, staff.id, { httpOnly: true, sameSite: "lax", path: "/" });
-    return { ok: true, redirect: "/dashboard" };
+    return { ok: true, redirect: staff.mustChangePassword ? "/account?first=1" : "/dashboard" };
   }
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });

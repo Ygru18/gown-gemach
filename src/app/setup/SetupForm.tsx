@@ -6,7 +6,7 @@ import { setupAction } from "@/app/actions/auth";
 export function SetupForm({ localMode }: { localMode: boolean }) {
   return (
     <ToastProvider>
-      <ActionForm action={setupAction} className="space-y-4">
+      <ActionForm action={setupAction} className="space-y-4" hardRedirect>
         <div>
           <label className="label" htmlFor="setupToken">Setup code</label>
           <input id="setupToken" name="setupToken" className="input" required defaultValue={localMode ? "local-test" : ""} autoComplete="off" />

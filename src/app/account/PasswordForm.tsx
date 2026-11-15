@@ -6,7 +6,7 @@ import { changePasswordAction } from "@/app/actions/auth";
 export function PasswordForm() {
   return (
     <ToastProvider>
-      <ActionForm action={changePasswordAction} className="space-y-4" resetOnSuccess>
+      <ActionForm action={changePasswordAction} className="space-y-4" resetOnSuccess hardRedirect>
         <div>
           <label className="label" htmlFor="newPassword">New password</label>
           <input id="newPassword" name="newPassword" type="password" minLength={10} required className="input" autoComplete="new-password" />

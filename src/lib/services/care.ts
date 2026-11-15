@@ -19,10 +19,9 @@ const bool = z
   .transform((v) => v === "on" || v === "true" || v === true);
 
 async function openWork(tx: Tx, gownId: string) {
-  const [cleanings, alterations] = await Promise.all([
-    tx.cleaningRecord.count({ where: { gownId, status: { in: ["OPEN", "IN_PROGRESS"] } } }),
-    tx.alterationRecord.count({ where: { gownId, status: { in: ["OPEN", "IN_PROGRESS"] } } }),
-  ]);
+  // Sequential on purpose: queries inside one transaction share a connection.
+  const cleanings = await tx.cleaningRecord.count({ where: { gownId, status: { in: ["OPEN", "IN_PROGRESS"] } } });
+  const alterations = await tx.alterationRecord.count({ where: { gownId, status: { in: ["OPEN", "IN_PROGRESS"] } } });
   return { cleanings, alterations };
 }
 

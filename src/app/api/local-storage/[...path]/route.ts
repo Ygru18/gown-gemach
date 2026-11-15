@@ -17,7 +17,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ path: stri
   const g = await guard(ctx.params);
   if (g.error) return g.error;
   try {
-    const buf = await fs.readFile(g.file!);
+    const buf = await fs.readFile(/*turbopackIgnore: true*/ g.file!);
     return new NextResponse(buf, { headers: { "content-type": "image/jpeg", "cache-control": "private, max-age=60" } });
   } catch {
     return new NextResponse("Not found", { status: 404 });
@@ -27,7 +27,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ path: stri
 export async function PUT(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
   const g = await guard(ctx.params);
   if (g.error) return g.error;
-  await fs.mkdir(path.dirname(g.file!), { recursive: true });
-  await fs.writeFile(g.file!, Buffer.from(await req.arrayBuffer()));
+  await fs.mkdir(/*turbopackIgnore: true*/ path.dirname(g.file!), { recursive: true });
+  await fs.writeFile(/*turbopackIgnore: true*/ g.file!, Buffer.from(await req.arrayBuffer()));
   return NextResponse.json({ ok: true });
 }
