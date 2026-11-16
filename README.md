@@ -72,7 +72,7 @@ Permissions are enforced **on the server** in every service function (`assertCan
 ## Security model
 
 * **Authentication**: Supabase Auth (email + password). Every page and server action re-verifies the session with Supabase (`getUser`) and requires an *active* staff record. `src/proxy.ts` only refreshes cookies.
-* **Database access** happens only on the server through Prisma, as the dedicated `gemach_app` role that owns the tables.
+* **Database access** happens only on the server through Prisma, connecting as the project's `postgres` role (the table owner, which bypasses RLS).
 * **Supabase Data API is locked**: Row Level Security is enabled on every table with *no* policies, and the `anon`/`authenticated` roles have no privileges. Even with the public anon key, nobody can read or write data directly.
 * **Photos** are in a *private* bucket. The server issues short-lived signed URLs to signed-in staff only; browsers upload with one-time signed upload URLs after a permission check. Images are resized in the browser (max 2000px) before upload.
 * **Secrets**: `SUPABASE_SERVICE_ROLE_KEY` and database URLs are server-only environment variables; nothing secret is prefixed `NEXT_PUBLIC_`.
@@ -83,14 +83,14 @@ Permissions are enforced **on the server** in every service function (`assertCan
 > These steps are needed once. Values are entered directly into the Supabase and Vercel dashboards — never paste passwords or keys into chat or commit them.
 
 1. **Supabase project** — create a project (e.g. `gown-gemach`).
-2. **Run `supabase/setup.sql`** in the Supabase SQL editor after replacing the password placeholder. This creates the `gemach_app` database role, the `btree_gist` extension and the private `gown-photos` bucket.
+2. **Run `supabase/setup.sql`** in the Supabase SQL editor. It creates the `btree_gist` extension and the private `gown-photos` bucket. (Already done for the production project.)
 3. **Turn off public sign-ups**: Supabase → Authentication → Sign In / Providers → disable *Allow new users to sign up*. (Staff accounts are created by the administrator inside the app.)
 4. **Vercel project** — import this GitHub repository (framework: Next.js). Add these environment variables (Production, Preview, Development):
 
    | Name | Value |
    |---|---|
-   | `DATABASE_URL` | Supabase → Connect → *Transaction pooler* URI, with user `gemach_app.<project-ref>` and the password from step 2, plus `?pgbouncer=true` |
-   | `DIRECT_URL` | Supabase → Connect → *Session pooler* URI (port 5432), same user/password |
+   | `DATABASE_URL` | Supabase → **Connect** → *Transaction pooler* URI (port 6543) with your database password filled in, plus `?pgbouncer=true` at the end |
+   | `DIRECT_URL` | Supabase → **Connect** → *Session pooler* URI (port 5432) with your database password filled in |
    | `NEXT_PUBLIC_SUPABASE_URL` | `https://<project-ref>.supabase.co` |
    | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API Keys → publishable (or legacy anon) key |
    | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API Keys → **secret** (or legacy service_role) key — mark *Sensitive* |
