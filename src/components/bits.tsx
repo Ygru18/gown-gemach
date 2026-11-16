@@ -4,6 +4,7 @@ import type { UpcomingConflictWarning } from "@/lib/services/dashboard";
 import { formatDate } from "@/lib/dates";
 import { formatPhone, gownCode, reservationCode } from "@/lib/format";
 import { cx, GownSilhouette, Ornament } from "./ui";
+import { DEDICATION } from "@/lib/brand";
 
 export function GownThumb({ url, alt, className }: { url: string | null | undefined; alt: string; className?: string }) {
   return (
@@ -29,7 +30,7 @@ export function Dedication({ compact = false }: { compact?: boolean }) {
         <p className="eyebrow">In Loving Memory</p>
         <Ornament className="my-3.5" />
         <p className={cx("mx-auto max-w-2xl font-display leading-snug text-ink italic", compact ? "text-xl" : "text-[1.55rem] sm:text-[1.9rem]")}>
-          Sharing beauty, kindness and generosity in loving memory of Chaya Surah Feldman.
+          {DEDICATION}
         </p>
       </div>
     </div>

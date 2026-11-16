@@ -11,6 +11,7 @@ import { Card, CardHeader, EmptyState, PageHeader, Pill } from "@/components/ui"
 import { CsvLink, ReportControls } from "@/components/ReportControls";
 import { GownStatusBadge, PaymentStatusBadge, ReservationStatusBadge } from "@/components/status";
 import type { ReactNode } from "react";
+import { APP_NAME } from "@/lib/brand";
 
 export const metadata = { title: "Reports" };
 
@@ -255,7 +256,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
       <PageHeader eyebrow="Reports" title="Reports & records" subtitle={tab === "inventory" ? "Current inventory snapshot." : `${formatDate(from)} – ${formatDate(to)}`} />
       <Suspense><ReportControls from={from} to={to} /></Suspense>
       <div className="hidden print:block mb-4">
-        <p className="font-display text-2xl">Chaya Surah Feldman Gown Gemach — {tab[0]!.toUpperCase() + tab.slice(1)} report</p>
+        <p className="font-display text-2xl">{APP_NAME} — {tab[0]!.toUpperCase() + tab.slice(1)} report</p>
         <p className="text-sm">{formatDate(from)} – {formatDate(to)} · printed {formatDate(today)}</p>
       </div>
       {body}

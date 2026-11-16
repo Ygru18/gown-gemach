@@ -5,6 +5,7 @@ import { needsSetup } from "@/lib/services/staff";
 import { LoginForm } from "./LoginForm";
 import { Monogram } from "@/components/Shell";
 import { Ornament } from "@/components/ui";
+import { DEDICATION, HONOREE } from "@/lib/brand";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sign in" };
@@ -19,7 +20,7 @@ export default async function LoginPage() {
       <div className="relative w-full max-w-md">
         <div className="mb-8 flex flex-col items-center text-center">
           <Monogram size={72} />
-          <h1 className="mt-5 font-display text-[2.4rem] leading-tight font-semibold text-ink">Chaya Surah Feldman</h1>
+          <h1 className="mt-5 font-display text-[2.4rem] leading-tight font-semibold text-ink">{HONOREE}</h1>
           <p className="mt-1 text-[12px] tracking-[0.34em] text-gold-600 uppercase">Gown Gemach</p>
         </div>
         <div className="card p-7 sm:p-8">
@@ -39,7 +40,7 @@ export default async function LoginPage() {
           <p className="eyebrow">In Loving Memory</p>
           <Ornament className="my-3" />
           <p className="mx-auto max-w-sm font-display text-lg leading-snug text-ink-soft italic">
-            Sharing beauty, kindness and generosity in loving memory of Chaya Surah Feldman.
+            {DEDICATION}
           </p>
         </div>
       </div>

@@ -60,7 +60,7 @@ async function toast(page, re) {
       await login("admin@example.test");
     }
     await page.getByText("In Loving Memory").first().waitFor();
-    await page.getByText("Sharing beauty, kindness and generosity in loving memory of Chaya Surah Feldman.").first().waitFor();
+    await page.getByText("Sharing beauty, kindness and generosity in loving memory of Chaya Surah Feldman A\"H.").first().waitFor();
   });
 
   await step("admin sets default fee and deposit in Settings", async () => {

@@ -1,6 +1,6 @@
-# Chaya Surah Feldman Gown Gemach
+# Chaya Surah Feldman A"H Gown Gemach
 
-*In Loving Memory — Sharing beauty, kindness and generosity in loving memory of Chaya Surah Feldman.*
+*In Loving Memory — Sharing beauty, kindness and generosity in loving memory of Chaya Surah Feldman A"H.*
 
 A private management application for the Gown Gemach: gown intake with photographs, inventory, customers, donors, a two-step reservation workflow with double-booking prevention, payments and security deposits, pickups, returns, inspections, cleaning and alterations, overdue tracking, reports with CSV export, and a full audit history.
 

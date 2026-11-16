@@ -19,6 +19,7 @@ import {
   KeyRound,
 } from "lucide-react";
 import { cx, DressIcon } from "./ui";
+import { HONOREE } from "@/lib/brand";
 
 const NAV = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -82,7 +83,7 @@ function Brand() {
     <Link href="/dashboard" className="flex items-center gap-3">
       <Monogram />
       <span className="leading-tight">
-        <span className="block font-display text-[19px] font-semibold text-ink">Chaya Surah Feldman</span>
+        <span className="block font-display text-[19px] leading-[1.15] font-semibold text-balance text-ink">{HONOREE}</span>
         <span className="block text-[11px] tracking-[0.28em] text-gold-600 uppercase">Gown Gemach</span>
       </span>
     </Link>
@@ -134,7 +135,7 @@ export function Shell({ children, staff, signOut, badges }: { children: ReactNod
         <div className="flex-1 overflow-y-auto">
           <NavLinks isAdmin={isAdmin} badges={badges} />
         </div>
-        <p className="mx-2 mt-4 mb-3 text-center font-display text-[13px] leading-snug text-muted italic">In loving memory of Chaya Surah Feldman</p>
+        <p className="mx-2 mt-4 mb-3 text-center font-display text-[13px] leading-snug text-muted italic">In loving memory of {HONOREE}</p>
         <UserBox name={staff.fullName} role={staff.role} signOut={signOut} />
       </aside>
 

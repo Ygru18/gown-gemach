@@ -11,10 +11,11 @@ import "@fontsource/jost/latin-400.css";
 import "@fontsource/jost/latin-500.css";
 import "@fontsource/jost/latin-600.css";
 import "./globals.css";
+import { APP_NAME, DEDICATION } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: { default: "Chaya Surah Feldman Gown Gemach", template: "%s · Chaya Surah Feldman Gown Gemach" },
-  description: "Sharing beauty, kindness and generosity in loving memory of Chaya Surah Feldman.",
+  title: { default: APP_NAME, template: `%s · ${APP_NAME}` },
+  description: DEDICATION,
   robots: { index: false, follow: false },
 };
 
