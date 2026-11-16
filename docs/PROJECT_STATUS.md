@@ -2,6 +2,8 @@
 
 *Last updated: November 16, 2026*
 
+**Live app: https://csf-gown-gemach.vercel.app** — staff sign in at https://csf-gown-gemach.vercel.app/login
+
 ## 1. What this is
 
 A private management web app for a gown gemach: donated gowns are taken in, photographed, lent to customers for a small fee, returned, inspected, cleaned/altered, and lent again. Used by an administrator and assistants. Built so a public-facing site (browse, check availability, reserve, pay) can be added later without a rebuild.
@@ -12,6 +14,7 @@ A private management web app for a gown gemach: donated gowns are taken in, phot
 
 | Item | Location |
 |---|---|
+| Live app | https://csf-gown-gemach.vercel.app (custom `.vercel.app` domain added in Vercel → Settings → Domains; `gown-gemach.vercel.app` belongs to someone else) |
 | Source code | GitHub `Ygru18/gown-gemach` (private), branch `main` |
 | Hosting | Vercel project `gown-gemach`, auto-deploys every push to `main` |
 | Database / Auth / Storage | Supabase project `gown-gemach` (ref `ugqgrepactaujoodlcex`, region ca-central-1, free plan) |
@@ -90,7 +93,7 @@ Gowns have `isPubliclyListed` and `publicDescription`. `src/lib/public/catalog.t
 ## 11. Open items & caveats
 
 1. **Vercel build log not reviewed by Claude** — the Vercel connector can't see the `gown-gemach` project. The deployment was verified through the database instead.
-2. **Confirm public sign-ups are disabled** in Supabase → Authentication → Sign In / Providers (staff accounts are created inside the app).
+2. **Confirm public sign-ups are disabled** in Supabase → Authentication → Sign In / Providers (staff accounts are created inside the app), and set Authentication → URL Configuration → **Site URL** to `https://csf-gown-gemach.vercel.app`.
 3. **Free-plan limits:** projects auto-pause after about a week of inactivity, and there are no restorable backups. Recommendation: Supabase Pro (~$45/month for the three projects) — no auto-pause, daily backups, and the Verizon preview database back. Until then, export CSV reports periodically.
 4. Delete `SETUP_TOKEN` from Vercel (optional; `/setup` is permanently disabled once an admin exists).
 5. Minor: the first sign-in performed by `/setup` doesn't set `lastLoginAt`; regular sign-ins do.

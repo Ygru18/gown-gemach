@@ -4,6 +4,8 @@
 
 A private management application for the Gown Gemach: gown intake with photographs, inventory, customers, donors, a two-step reservation workflow with double-booking prevention, payments and security deposits, pickups, returns, inspections, cleaning and alterations, overdue tracking, reports with CSV export, and a full audit history.
 
+**Live app:** https://csf-gown-gemach.vercel.app (staff sign in at https://csf-gown-gemach.vercel.app/login)
+
 **Stack** (same foundation as the Verizon Bill Manager): Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · Prisma 7 (driver adapter `@prisma/adapter-pg`) · Supabase (Postgres, Auth, Storage) · Vercel · GitHub.
 
 ---
@@ -98,11 +100,11 @@ Permissions are enforced **on the server** in every service function (`assertCan
    | `SETUP_TOKEN` | any long random string (one-time setup code) |
 
 5. **Deploy.** The build runs `prisma generate && prisma migrate deploy && next build`, so the database tables are created automatically on the first deployment.
-6. **Supabase Auth URL** (optional): Authentication → URL Configuration → set *Site URL* to the Vercel production URL.
+6. **Supabase Auth URL** (optional): Authentication → URL Configuration → set *Site URL* to the production URL (`https://csf-gown-gemach.vercel.app`).
 
 ## Creating the administrator and assistants
 
-* **First administrator**: open `https://<your-app>/setup`, enter the `SETUP_TOKEN` code, your name, email and a password (10+ characters). The page only works while no staff accounts exist; afterwards it is permanently disabled.
+* **First administrator**: open `https://csf-gown-gemach.vercel.app/setup`, enter the `SETUP_TOKEN` code, your name, email and a password (10+ characters). The page only works while no staff accounts exist; afterwards it is permanently disabled.
 * **Assistants**: as administrator, go to **Staff / Users → Add staff member**. Enter their name, email, role and a temporary password, and give them the password privately. On first sign-in they must choose their own password.
 * **Forgotten password**: Staff / Users → *Reset password* sets a new temporary password.
 * **Someone leaves**: *Deactivate* blocks sign-in immediately; everything they recorded stays in the history.
